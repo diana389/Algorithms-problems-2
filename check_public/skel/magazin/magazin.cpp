@@ -87,7 +87,7 @@ int main()
 	auto *task = new (nothrow) Task();
 	if (!task)
 	{
-		cerr << "new failed: WTF are you doing? Throw your PC!\n";
+		cerr << "Failed!\n";
 		return -1;
 	}
 	task->solve();
