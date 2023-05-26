@@ -16,27 +16,21 @@ public:
 		ifstream fin("magazin.in");
 		fin >> N >> Q;
 
-		std::vector<int> p(N + 1, -1); // Parent array
+		// std::vector<int> p(N + 1, -1); // Parent array
 
 		for (int i = 2; i <= N; ++i)
-			fin >> p[i];
-
-		// void read_input() {
-		//     ifstream fin("in");
-		//     fin >> n >> m;
-		//     for (int i = 1, x, y; i <= m; i++) {
-		//         fin >> x >> y; // arc (x, y)
-		//         adj[x].push_back(y);
-		//     }
-		//     fin.close();
-		// }
+		{
+			int x;
+			fin >> x;
+			adj[x].push_back(i);
+		}
 
 		std::vector<int> dfs(N + 1, -1); // dfs array, initially set to -1
 		std::vector<int> dfs_invers(N + 1, -1);
 		std::vector<int> start(N + 1);	// Start time array
 		std::vector<int> finish(N + 1); // Finish time array
 
-		DFS(N, p, dfs, dfs_invers, start, finish);
+		DFS(N, dfs, dfs_invers, start, finish);
 		ofstream fout("magazin.out");
 		// for (int i = 1; i < N; ++i)
 		// {
@@ -89,24 +83,24 @@ public:
 private:
 	int index = 2;
 
-	void DFS_RECURSIVE(int node, int N, std::vector<int> &p, std::vector<int> &visited,
+	void DFS_RECURSIVE(int node, int N, std::vector<int> &visited,
 					   std::vector<int> &dfs, std::vector<int> &dfs_invers, std::vector<int> &start, std::vector<int> &finish, int &timestamp)
 	{
 		start[node] = ++timestamp;
-		for (int neigh = 1; neigh <= N; neigh++)
+		for (int neigh : adj[node])
 		{
-			if (p[neigh] == node && visited[neigh] == -1)
+			if (visited[neigh] == -1)
 			{
 				dfs_invers[neigh] = index;
 				dfs[index++] = neigh;
 				visited[neigh] = 1;
-				DFS_RECURSIVE(neigh, N, p, visited, dfs, dfs_invers, start, finish, timestamp);
+				DFS_RECURSIVE(neigh, N, visited, dfs, dfs_invers, start, finish, timestamp);
 			}
 		}
 		finish[node] = ++timestamp;
 	}
 
-	void DFS(int N, std::vector<int> &p, std::vector<int> &dfs, std::vector<int> &dfs_invers,
+	void DFS(int N, std::vector<int> &dfs, std::vector<int> &dfs_invers,
 			 std::vector<int> &start, std::vector<int> &finish)
 	{
 		std::vector<int> visited(N + 1, -1); // visited array, initially set to -1
@@ -119,7 +113,7 @@ private:
 		{
 			if (visited[node] == -1)
 			{
-				DFS_RECURSIVE(node, N, p, visited, dfs, dfs_invers, start, finish, timestamp);
+				DFS_RECURSIVE(node, N, visited, dfs, dfs_invers, start, finish, timestamp);
 			}
 		}
 	}
