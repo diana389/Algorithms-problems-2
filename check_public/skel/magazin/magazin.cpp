@@ -1,8 +1,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-static constexpr int NMAX = (int)1e5 + 5; // 10^5 + 5 = 100.005
-vector<int> dfs(((int)1e5 + 5), -1);
+static constexpr int NMAX = (int)1e5 + 5;	 // 10^5 + 5 = 100.005
+vector<int> dfs(((int)1e5 + 5), -1);		 // dfs array, initially set to -1
 vector<int> dfs_indexes(((int)1e5 + 5), -1); // array of indexes in dfs array, initially set to -1
 vector<int> start(((int)1e5 + 5));			 // start time array
 vector<int> finish(((int)1e5 + 5));			 // finish time array
@@ -18,8 +18,11 @@ public:
 	void solve()
 	{
 		ifstream fin("magazin.in");
+		ofstream fout("magazin.out");
+
 		fin >> N >> Q;
 
+		// read the parent of each node
 		for (int i = 2; i <= N; ++i)
 		{
 			int x; // x = parent of i
@@ -31,26 +34,7 @@ public:
 		dfs_indexes[1] = 1;
 
 		DFS_RECURSIVE(1);
-
-		ofstream fout("magazin.out");
-
-		for (int i = 0; i < Q; ++i)
-		{
-			int D; // D = nodul de start
-			int E; // E = numarul de expedieri consecutive
-			fin >> D >> E;
-
-			int D_children = (finish[D] - start[D] - 1) / 2; // number of children of D
-			if (D_children < E)
-			{
-				fout << -1 << '\n';
-				continue;
-			}
-
-			int pos = dfs_indexes[D] + E;
-
-			fout << dfs[pos] << '\n'; // print the answer
-		}
+		print_output(fin, fout); // respond to the questions	
 
 		fout.close();
 		fin.close();
@@ -74,6 +58,27 @@ private:
 			}
 		}
 		finish[node] = ++timestamp; // set the finish time of the node
+	}
+
+	void print_output(ifstream &fin, ofstream &fout)
+	{
+		for (int i = 0; i < Q; ++i)
+		{
+			int D; // D = nodul de start
+			int E; // E = numarul de expedieri consecutive
+			fin >> D >> E;
+
+			int D_children = (finish[D] - start[D] - 1) / 2; // number of children of D
+			if (D_children < E)
+			{
+				fout << -1 << '\n';
+				continue;
+			}
+
+			int pos = dfs_indexes[D] + E;
+
+			fout << dfs[pos] << '\n'; // print the answer
+		}
 	}
 };
 
