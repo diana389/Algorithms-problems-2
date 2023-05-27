@@ -4,30 +4,31 @@ using namespace std;
 class Task
 {
 public:
-    // n = numar de noduri, m = numar de muchii/arce
-    int N, M, S;
-
     // numarul maxim de noduri
     static constexpr int NMAX = (int)1e5 + 5; // 10^5 + 5 = 100.005
-
-    // adj[node] = lista de adiacenta a nodului node
-    // exemplu: daca adj[node] = {..., neigh, ...} => exista arcul (node, neigh)
+    int N, M, S;
+    int nr_comp = 0;
+    int index = 0;
     vector<int> adj[NMAX];
-    vector<int> nodes;
-    int current_node = 1;
+    vector<int> visited;
+    // vector<int> dfs;
+    // vector<int> dfs_nr_compes;
+
+    vector<int> all_sccs;
 
     void solve()
     {
+        ofstream fout("ferate.out");
         read_input();
-        // print_output(adj);
 
-        while (current_node <= N)
-        {
-            solve_task(current_node);
-            current_node++;
-        }
+        visited.resize(N + 1, 0);
 
-        print_output();
+        all_sccs.resize(N + 1, -1);
+
+        get_result(fout);
+        print_output(fout);
+
+        fout.close();
     }
 
 private:
@@ -41,58 +42,76 @@ private:
             adj[x].push_back(y); // arc (x, y)
         }
         fin.close();
-
-        for (int i = 1; i <= N; i++)
-            nodes.push_back(i);
     }
 
-    void solve_task(int node)
+    void get_result(ofstream &fout)
     {
-        vector<int> neighbors = adj[node]; // Make a copy of the adjacency list
+        // all_sccs[S] = nr_comp;
+        index = -2;
+        DFS_RECURSIVE(S);
 
-        for (int neigh : neighbors)
+        fout << "node: " << S << '\n';
+        // print_output(fout);
+
+        for (int i = 1; i <= N; ++i)
         {
-            // Find the element in the adjacency list
-            vector<int>::iterator new_end;
-            new_end = remove(adj[node].begin(), adj[node].end(), neigh);
-            adj[node].erase(new_end, adj[node].end());
-
-            solve_task(neigh);
-
-            if (neigh != current_node)
+            if (all_sccs[i] == -1)
             {
-                new_end = remove(nodes.begin(), nodes.end(), neigh);
-                nodes.erase(new_end, nodes.end());
+                // all_sccs[i] = nr_comp;
+                index = nr_comp;
+
+                DFS_RECURSIVE(i);
+
+                fout << "node: " << i << '\n';
+                // print_output(fout);
+
+                if (index == nr_comp)
+                    nr_comp++;
             }
         }
     }
 
-    void print_output()
+    void DFS_RECURSIVE(int node)
     {
-        ofstream fout("ferate.out");
+        visited[node] = 1;
+
+        for (int neigh : adj[node]) // for each child of the node
+        {
+            if (visited[neigh] == 0 && all_sccs[neigh] == -1) // if the child is not visited
+            {
+                visited[neigh] = 1;
+                DFS_RECURSIVE(neigh);
+            }
+            else if (visited[neigh] == 0 && all_sccs[neigh] >= 0)
+            {
+                // index = all_sccs[neigh];
+                visited[neigh] = 1;
+                DFS_RECURSIVE(neigh);
+            }
+        }
+
+        all_sccs[node] = index;
+        visited[node] = 0;
+    }
+
+    void print_output(ofstream &fout)
+    {
+        fout << nr_comp << '\n';
         for (int i = 1; i <= N; i++)
         {
             fout << i << ": ";
-            for (int neigh : adj[i])
-            {
-                fout << neigh << " ";
-            }
-            fout << "\n";
+            fout << all_sccs[i] << ' ';
+            fout << "\n\n";
         }
-
-        for (int node : nodes)
-            fout << node << " ";
-
-        fout.close();
     }
 };
 
 int main()
 {
-    auto *task = new (nothrow) Task();
+    auto *task = new (nothrow) Task(); // hint: cppreference/nothrow
     if (!task)
     {
-        cerr << "Failed!\n";
+        cerr << "new failed: WTF are you doing? Throw your PC!\n";
         return -1;
     }
     task->solve();
