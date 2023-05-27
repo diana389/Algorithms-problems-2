@@ -4,34 +4,42 @@ using namespace std;
 class Task
 {
 public:
-    // numarul maxim de noduri
-    static constexpr int NMAX = (int)1e5 + 5; // 10^5 + 5 = 100.005
-    int N, M, S;
-    int nr_comp = 0;
-    int index = 0;
-    vector<int> adj[NMAX];
-    vector<int> visited;
-    // vector<int> dfs;
-    // vector<int> dfs_nr_compes;
-
-    vector<int> all_sccs;
-
     void solve()
     {
-        ofstream fout("ferate.out");
         read_input();
-
-        visited.resize(N + 1, 0);
-
-        all_sccs.resize(N + 1, -1);
-
-        get_result(fout);
-        print_output(fout);
-
-        fout.close();
+        print_output(tarjan_scc());
     }
 
 private:
+    // maximum number of nodes
+    static constexpr int NMAX = (int)1e5 + 5; // 10^5 + 5 = 100.005
+
+    // N = number of nodes, M = number of edges, S = source node
+    int N, M, S;
+
+    // adj[node] = adjacency list of node
+    vector<int> adj[NMAX];
+
+    // adj_int[node] = adj mirrored, stores the nodes that have an edge going to node
+    vector<int> adj_int[NMAX];
+
+    // parent[node] = parent of node in the DFS traversal
+    vector<int> parent;
+
+    // found[node] = the timestamp when node was found (when started to visit its subtree)
+    // The global timestamp is incremented everytime a node is found.
+    vector<int> found;
+
+    // the minimum accessible timestamp that node can see/access
+    // low_link[node] =  min { found[x] | x is node OR x in ancestors(node) OR x in descendants(node) };
+    vector<int> low_link;
+
+    // visiting stack: nodes are pushed into the stack in visiting order
+    stack<int> nodes_stack;
+
+    // in_stack[node] = true, if node is in stack false, otherwise
+    vector<bool> in_stack;
+
     void read_input()
     {
         ifstream fin("ferate.in");
@@ -39,79 +47,140 @@ private:
         for (int i = 1, x, y; i <= M; i++)
         {
             fin >> x >> y;
-            adj[x].push_back(y); // arc (x, y)
+            adj[x].push_back(y);     // edge from x to y
+            adj_int[y].push_back(x); // there is an edge from x to y, adj[y] stores x
         }
         fin.close();
     }
 
-    void get_result(ofstream &fout)
+    vector<vector<int>> tarjan_scc()
     {
-        // all_sccs[S] = nr_comp;
-        index = -2;
-        DFS_RECURSIVE(S);
+        // initialize results
+        parent = vector<int>(N + 1, -1);
+        found = vector<int>(N + 1, -1);
+        low_link = vector<int>(N + 1, -1);
+        in_stack = vector<bool>(N + 1, false);
 
-        fout << "node: " << S << '\n';
-        // print_output(fout);
-
-        for (int i = 1; i <= N; ++i)
+        // visit all nodes
+        vector<vector<int>> all_sccs;
+        int timestamp = 0; // global timestamp
+        for (int node = 1; node <= N; ++node)
         {
-            if (all_sccs[i] == -1)
-            {
-                // all_sccs[i] = nr_comp;
-                index = nr_comp;
+            if (parent[node] == -1)
+            {                        // node not visited
+                parent[node] = node; // convention: the parent of the root is actually the root
 
-                DFS_RECURSIVE(i);
-
-                fout << "node: " << i << '\n';
-                // print_output(fout);
-
-                if (index == nr_comp)
-                    nr_comp++;
+                // start a new DFS traversal this subtree
+                dfs(node, timestamp, all_sccs);
             }
+        }
+
+        return all_sccs;
+    }
+
+    void dfs(int node, int &timestamp, vector<vector<int>> &all_sccs)
+    {
+        // a new node is visited - increment the timestamp
+        found[node] = ++timestamp;    // the timestamp when node was found
+        low_link[node] = found[node]; // node only knows its timestamp
+        nodes_stack.push(node);       // add node to the visiting stack
+        in_stack[node] = true;
+
+        // visit each neighbour
+        for (auto neigh : adj[node])
+        {
+            // check if neigh is already visited
+            if (parent[neigh] != -1)
+            {
+                // update low_link[node] with information gained through neigh
+                // note: neigh is in the same SCC with node only if it's in the visiting stack;
+                // otherwise, neigh is from other SCC, so it should be ignored
+                if (in_stack[neigh])
+                {
+                    low_link[node] = min(low_link[node], found[neigh]);
+                }
+                continue;
+            }
+
+            // save parent
+            parent[neigh] = node;
+
+            // recursively visit the child subree
+            dfs(neigh, timestamp, all_sccs);
+
+            // update low_link[node] with information gained through neigh
+            low_link[node] = min(low_link[node], low_link[neigh]);
+        }
+
+        // node is root in a SCC if low_link[node] == found[node]
+        // (there is no edge from a descendant to an ancestor)
+        if (low_link[node] == found[node])
+        {
+            // pop all elements above node from stack => extract the SCC where node is root
+            vector<int> scc;
+            do
+            {
+                auto x = nodes_stack.top();
+                nodes_stack.pop();
+                in_stack[x] = false;
+
+                scc.push_back(x);
+            } while (scc.back() != node); // stop when node was popped from the stack
+
+            // save SCC
+            all_sccs.push_back(scc);
         }
     }
 
-    void DFS_RECURSIVE(int node)
+    void print_output(const vector<vector<int>> &all_sccs)
     {
-        visited[node] = 1;
+        ofstream fout("ferate.out");
 
-        for (int neigh : adj[node]) // for each child of the node
+        int size = all_sccs.size(); // number of SCCs
+
+        for (const auto &scc : all_sccs)
         {
-            if (visited[neigh] == 0 && all_sccs[neigh] == -1) // if the child is not visited
+            int found = 0;
+
+            // remove the SCC if it contains the source node
+            if (find(scc.begin(), scc.end(), S) != scc.end())
             {
-                visited[neigh] = 1;
-                DFS_RECURSIVE(neigh);
+                size--;
+                continue;
             }
-            else if (visited[neigh] == 0 && all_sccs[neigh] >= 0)
+
+            // find the SCCs containing a node x that has an edge coming from
+            // a node y that is not in the SCC
+            // -> remove the SCC from the total number of SCCs
+            for (auto node : scc)
             {
-                // index = all_sccs[neigh];
-                visited[neigh] = 1;
-                DFS_RECURSIVE(neigh);
+                for (int neigh : adj_int[node])
+                    if (find(scc.begin(), scc.end(), neigh) == scc.end())
+                    {
+                        found = 1;
+                        break;
+                    }
+
+                if (found)
+                    break;
             }
+
+            if (found)
+                size--;
         }
 
-        all_sccs[node] = index;
-        visited[node] = 0;
-    }
-
-    void print_output(ofstream &fout)
-    {
-        fout << nr_comp << '\n';
-        for (int i = 1; i <= N; i++)
-        {
-            fout << i << ": ";
-            fout << all_sccs[i] << ' ';
-            fout << "\n\n";
-        }
+        // print the number of edges that need to be added
+        fout << size;
+        fout.close();
     }
 };
 
 int main()
 {
-    auto *task = new (nothrow) Task(); // hint: cppreference/nothrow
+    auto *task = new (nothrow) Task();
     if (!task)
     {
-        cerr << "new failed: WTF are you doing? Throw your PC!\n";
+        cerr << "Failed!\n";
         return -1;
     }
     task->solve();
