@@ -322,7 +322,7 @@ echo "---------------------- Run $TESTS_DIR -------------------"
 # Run tests - change functions test_*
 test_homework $TEST_TO_RUN
 check_readme
-# check_coding_style_full
+check_coding_style_full
 
 # Clean junk
 make -f Makefile clean &>/dev/null

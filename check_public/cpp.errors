@@ -1,9 +1,7 @@
-./skel/ferate/ferate.cpp:32:  Missing space before ( in for(  [whitespace/parens] [5]
-./skel/supercomputer/supercomputer.cpp:12:  Missing space before ( in for(  [whitespace/parens] [5]
-./skel/supercomputer/supercomputer.cpp:15:  Missing space before ( in for(  [whitespace/parens] [5]
+./skel/teleportare/teleportare.cpp:123:  Could not find a newline character at the end of the file.  [whitespace/ending_newline] [5]
 Done processing ./_utils/verif.cpp
 Done processing ./skel/ferate/ferate.cpp
 Done processing ./skel/magazin/magazin.cpp
 Done processing ./skel/supercomputer/supercomputer.cpp
 Done processing ./skel/teleportare/teleportare.cpp
-Total errors found: 3
+Total errors found: 1
